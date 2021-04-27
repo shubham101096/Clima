@@ -8,6 +8,7 @@
 
 import UIKit
 import Alamofire
+import CoreLocation
 
 class WeatherViewController: UIViewController {
 
@@ -17,6 +18,7 @@ class WeatherViewController: UIViewController {
     @IBOutlet weak var searchTextField: UITextField!
     
     var weatherManager = WeatherManager()
+    let locationManager = CLLocationManager()
         
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,13 +26,19 @@ class WeatherViewController: UIViewController {
         searchTextField.delegate = self
         searchTextField.placeholder = "Type city..."
         weatherManager.delegate = self
-        
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.delegate = self
+        locationManager.requestLocation()
     }
 
     @IBAction func searchButtonTapped(_ sender: UIButton) {
         searchTextField.endEditing(true)
     }
     
+    @IBAction func locationButtonTapped(_ sender: UIButton) {
+        print("locationButtonTapped")
+        locationManager.requestLocation()
+    }
 }
 
 //MARK: - UITextFieldDelegate Methods
@@ -71,3 +79,20 @@ extension WeatherViewController: WeatherManagerDelegate {
     }
 }
 
+//MARK: - CLLocationManagerDelegate Methods
+
+
+extension WeatherViewController : CLLocationManagerDelegate {
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let coordinates = locations.first?.coordinate else {
+            print("Unable to fetch coordinates")
+            return
+        }
+        print("Coordinates received")
+        locationManager.stopUpdatingLocation()
+        weatherManager.fetchWeatherData(of: coordinates)
+    }
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print(error)
+    }
+}

@@ -8,6 +8,7 @@
 
 import Foundation
 import Alamofire
+import CoreLocation
 
 protocol WeatherManagerDelegate {
     func updateWeather(_ weatherManager: WeatherManager, _ weather: WeatherModel)
@@ -19,9 +20,7 @@ struct WeatherManager {
     let apiKey = "af3bf256766580cc46a6079dbbad91da"
     var delegate: WeatherManagerDelegate?
     
-    func fetchWeatherData(ofCity city: String) {
-        let params = ["q":city, "appid":apiKey, "units":"metric"]
-        
+    func performRequest(with params: [String:String]) {
         AF.request(url, method: .get, parameters: params).responseDecodable(of: WeatherData.self) { (response) in
             if response.error != nil {
                 delegate?.didFailWithError(self, "Error in fetching weather data: \(response.error)")
@@ -43,6 +42,18 @@ struct WeatherManager {
             let weatherModel = WeatherModel(city: decodedData.name, temp: decodedData.main.temp, weatherId: decodedData.weather[0].id)
             delegate?.updateWeather(self, weatherModel)
         }
+    }
+    
+    func fetchWeatherData(ofCity city: String) {
+        let params = ["q":city, "appid":apiKey, "units":"metric"]
+        performRequest(with: params)
+    }
+    
+    func fetchWeatherData(of coordinates: CLLocationCoordinate2D) {
+        var params = ["appid":apiKey, "units":"metric"]
+        params["lat"] = String(coordinates.latitude)
+        params["lon"] = String(coordinates.longitude)
+        performRequest(with: params)
     }
     
     func getConditionName(weatherId: Int) -> String {
